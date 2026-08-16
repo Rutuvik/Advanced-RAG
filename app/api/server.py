@@ -62,9 +62,18 @@ class QueryResponse(BaseModel):
 
 print("\nStarting Advanced RAG API...")
 
-rag_pipeline = RAGPipeline()
+rag_pipeline = None
 
-print("Advanced RAG API ready!")
+
+def get_rag_pipeline():
+    global rag_pipeline
+
+    if rag_pipeline is None:
+        print("\nInitializing RAG pipeline...")
+        rag_pipeline = RAGPipeline()
+        print("RAG pipeline initialized successfully!")
+
+    return rag_pipeline
 
 
 # ============================================================
@@ -108,7 +117,8 @@ def query(request: QueryRequest):
 
     try:
 
-        result = rag_pipeline.ask(
+        pipeline = get_rag_pipeline()
+        result = pipeline.ask(
             query=question
         )
 
