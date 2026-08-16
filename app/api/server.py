@@ -108,6 +108,9 @@ def health():
 )
 def query(request: QueryRequest):
 
+    print("\n========== QUERY REQUEST RECEIVED ==========")
+    print("Question:", request.question)
+
     question = request.question.strip()
 
     if not question:
@@ -118,10 +121,21 @@ def query(request: QueryRequest):
 
     try:
 
+        print("STEP 1: Getting RAG pipeline...")
+
         pipeline = get_rag_pipeline()
+
+        print("STEP 2: RAG pipeline ready")
+
+        print("STEP 3: Calling pipeline.ask()")
+
         result = pipeline.ask(
             query=question
         )
+
+        print("STEP 4: pipeline.ask() completed")
+
+        print("Result:", result)
 
         return {
             "answer": result["answer"],
@@ -132,10 +146,10 @@ def query(request: QueryRequest):
     except Exception as error:
 
         print(
-            f"Error while processing query: {error}"
+            f"ERROR while processing query: {error}"
         )
 
         raise HTTPException(
             status_code=500,
-            detail="An error occurred while processing the query.",
+            detail=str(error),
         )
