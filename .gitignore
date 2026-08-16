@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment variables
+.env
+.env.*
+
+# Data
+data/raw/*
+data/processed/*
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
