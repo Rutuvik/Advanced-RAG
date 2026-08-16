@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app.rag_pipeline import RAGPipeline
+
 
 
 # ============================================================
@@ -70,6 +70,7 @@ def get_rag_pipeline():
 
     if rag_pipeline is None:
         print("\nInitializing RAG pipeline...")
+        from app.rag_pipeline import RAGPipeline
         rag_pipeline = RAGPipeline()
         print("RAG pipeline initialized successfully!")
 
