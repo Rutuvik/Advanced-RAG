@@ -109,7 +109,10 @@ def health():
 def query(request: QueryRequest):
 
     question = request.question.strip()
-
+    print("\n==============================")
+    print("POST /query RECEIVED")
+    print(f"Question: {question}")
+    print("==============================")
     if not question:
         raise HTTPException(
             status_code=400,

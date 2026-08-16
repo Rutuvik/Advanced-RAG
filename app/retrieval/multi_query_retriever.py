@@ -1,3 +1,4 @@
+from app.api.server import query
 from app.retrieval.query_expander import QueryExpander
 from app.retrieval.hybrid_retriever import HybridRetriever
 
@@ -27,7 +28,10 @@ class MultiQueryRetriever:
         query: str,
         top_k: int = 5,
     ):
+        print("\n[MQR] Starting multi-query retrieval")
+        print(f"[MQR] Original query: {query}")
 
+        print("[MQR] Expanding query...")
         # ==================================================
         # 1. Generate multiple search queries
         # ==================================================
@@ -36,7 +40,7 @@ class MultiQueryRetriever:
             query
         )
 
-        print("\nGenerated search queries:")
+        print(f"[MQR] Query expansion completed: {len(queries)} queries")
 
         for index, search_query in enumerate(
             queries,
@@ -53,6 +57,9 @@ class MultiQueryRetriever:
         all_candidates = {}
 
         for search_query in queries:
+            print(
+        f"\n[MQR] Retrieving candidates for: {search_query}"
+    )
 
             candidates = (
                 self.hybrid_retriever
@@ -60,6 +67,9 @@ class MultiQueryRetriever:
                     search_query
                 )
             )
+            print(
+        f"[MQR] Candidates returned: {len(candidates)}"
+    )
 
             for candidate in candidates:
 
@@ -160,7 +170,9 @@ class MultiQueryRetriever:
         # ==================================================
         # 5. Rerank using original query
         # ==================================================
-
+        print(
+    f"\n[MQR] Starting reranking for {len(candidates)} candidates..."
+)
         reranked = (
             self.hybrid_retriever
             .reranker
@@ -170,7 +182,9 @@ class MultiQueryRetriever:
                 top_k=top_k,
             )
         )
-
+        print(
+    f"[MQR] Reranking completed. Results: {len(reranked)}"
+)
         # ==================================================
         # 6. Return final results
         # ==================================================
