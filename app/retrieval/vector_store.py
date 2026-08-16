@@ -1,14 +1,38 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
-COLLECTION_NAME="advanced_rag"
-VECTOR_SIZE=384
+from app.config import settings
+
+
+COLLECTION_NAME = "advanced_rag"
+VECTOR_SIZE = 384
+
 
 class VectorStore:
-    def __init__(self, collection_name: str = COLLECTION_NAME,):
-        self.collection_name=collection_name
-        self.client=QdrantClient(path="data/qdrant")
+
+    def __init__(
+        self,
+        collection_name: str = COLLECTION_NAME,
+    ):
+        self.collection_name = collection_name
+
+        # Use Qdrant Cloud when credentials are configured.
+        if settings.qdrant_url and settings.qdrant_api_key:
+            print("Using Qdrant Cloud...")
+            self.client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key,
+            )
+
+        # Otherwise use local Qdrant.
+        else:
+            print("Using local Qdrant...")
+            self.client = QdrantClient(
+                path="data/qdrant"
+            )
+
         self._create_collection()
+
     def _create_collection(self):
 
         collections = self.client.get_collections()
@@ -45,4 +69,3 @@ class VectorStore:
         return self.client.get_collection(
             self.collection_name
         )
-        
