@@ -22,10 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,6 +51,8 @@ class QueryResponse(BaseModel):
     answer: str
     sources: list
     confidence: dict
+    retrieval:dict
+    metrics:dict
 
 
 # ============================================================
@@ -141,6 +140,8 @@ def query(request: QueryRequest):
             "answer": result["answer"],
             "sources": result["sources"],
             "confidence": result["confidence"],
+            "retrieval": result["retrieval"],
+            "metrics": result["metrics"],
         }
 
     except Exception as error:

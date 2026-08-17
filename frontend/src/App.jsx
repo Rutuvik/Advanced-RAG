@@ -32,15 +32,13 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      const data = await response.json();
 
+      if (!response.ok) {
         throw new Error(
-          errorData.detail || "Failed to process the question."
+          data.detail || "Failed to process the question."
         );
       }
-
-      const data = await response.json();
 
       setResult(data);
     } catch (err) {
@@ -60,18 +58,32 @@ function App() {
     }
   };
 
-  const getConfidenceClass = (level) => {
-    if (!level) return "confidence-default";
+  const formatTime = (value) => {
+    if (typeof value !== "number") return "—";
 
-    return `confidence-${level.toLowerCase()}`;
+    return `${value.toFixed(2)}s`;
   };
+
+  const formatScore = (value) => {
+    if (typeof value !== "number") return "—";
+
+    return value.toFixed(4);
+  };
+
+  const confidenceLevel =
+    result?.confidence?.level?.toLowerCase() || "default";
+
+  const retrieval = result?.retrieval || {};
+
+  const metrics =
+    result?.metrics ||
+    result?.metrices ||
+    {};
 
   return (
     <div className="app">
 
-      {/* ================================================= */}
-      {/* HEADER */}
-      {/* ================================================= */}
+      {/* ================= HEADER ================= */}
 
       <header className="header">
 
@@ -85,7 +97,7 @@ function App() {
             <h1>Advanced RAG</h1>
 
             <p>
-              Secure Retrieval-Augmented Generation
+              Retrieval Intelligence Platform
             </p>
           </div>
 
@@ -93,51 +105,51 @@ function App() {
 
         <div className="status">
           <span className="status-dot"></span>
-          API Online
+          Local API
         </div>
 
       </header>
 
 
-      {/* ================================================= */}
-      {/* MAIN */}
-      {/* ================================================= */}
+      {/* ================= MAIN ================= */}
 
       <main className="main">
+
+        {/* HERO */}
 
         <section className="hero">
 
           <div className="hero-badge">
-            MULTI-STAGE RETRIEVAL SYSTEM
+            ADVANCED RETRIEVAL-AUGMENTED GENERATION
           </div>
 
           <h2>
-            Ask your documents.
+            Ask your knowledge base.
             <br />
-            <span>Get grounded answers.</span>
+            <span>Inspect the entire RAG pipeline.</span>
           </h2>
 
           <p className="hero-description">
-            Ask questions against your indexed knowledge base
-            using hybrid retrieval, multi-query expansion,
-            reranking and confidence evaluation.
+            Multi-query expansion, hybrid retrieval,
+            reranking, confidence evaluation and
+            grounded generation — all in one system.
           </p>
 
         </section>
 
 
-        {/* ================================================= */}
-        {/* QUESTION BOX */}
-        {/* ================================================= */}
+        {/* ================= QUERY ================= */}
 
         <section className="query-section">
 
           <div className="query-label">
-            <span>QUESTION</span>
+
+            <span>QUERY</span>
 
             <span className="shortcut">
               ENTER ↵
             </span>
+
           </div>
 
           <div className="query-box">
@@ -148,7 +160,7 @@ function App() {
                 setQuestion(event.target.value)
               }
               onKeyDown={handleKeyDown}
-              placeholder="Ask something about your documents..."
+              placeholder="Ask a question about your indexed documents..."
               rows={4}
               disabled={loading}
             />
@@ -156,7 +168,8 @@ function App() {
             <div className="query-footer">
 
               <span className="query-hint">
-                Answers are generated only from retrieved context.
+                Responses are grounded in retrieved
+                document context.
               </span>
 
               <button
@@ -171,11 +184,11 @@ function App() {
                 {loading ? (
                   <>
                     <span className="spinner"></span>
-                    Retrieving...
+                    Running RAG pipeline...
                   </>
                 ) : (
                   <>
-                    Ask Question
+                    Run Query
                     <span>→</span>
                   </>
                 )}
@@ -189,151 +202,434 @@ function App() {
         </section>
 
 
-        {/* ================================================= */}
-        {/* ERROR */}
-        {/* ================================================= */}
+        {/* ================= LOADING ================= */}
 
-        {error && (
-          <div className="error-box">
-            <div className="error-icon">!</div>
+        {loading && (
+
+          <div className="loading-panel">
+
+            <div className="loading-spinner"></div>
 
             <div>
-              <strong>Request failed</strong>
-              <p>{error}</p>
+
+              <strong>
+                Processing your query
+              </strong>
+
+              <p>
+                Expanding query → Hybrid retrieval →
+                Reranking → Confidence → Generation
+              </p>
+
             </div>
+
           </div>
+
         )}
 
 
-        {/* ================================================= */}
-        {/* RESULT */}
-        {/* ================================================= */}
+        {/* ================= ERROR ================= */}
+
+        {error && (
+
+          <div className="error-box">
+
+            <div className="error-icon">
+              !
+            </div>
+
+            <div>
+
+              <strong>
+                Request failed
+              </strong>
+
+              <p>
+                {error}
+              </p>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        {/* ================= RESULTS ================= */}
 
         {result && (
+
           <section className="results">
 
-            {/* ANSWER */}
+            {/* ================= ANSWER ================= */}
 
             <div className="answer-card">
 
               <div className="section-heading">
 
                 <div>
+
                   <span className="eyebrow">
                     GENERATED RESPONSE
                   </span>
 
-                  <h3>Answer</h3>
+                  <h3>
+                    Answer
+                  </h3>
+
                 </div>
 
                 {result.confidence && (
+
                   <div
-                    className={`confidence ${getConfidenceClass(
-                      result.confidence.level
-                    )}`}
+                    className={`confidence confidence-${confidenceLevel}`}
                   >
+
                     <span className="confidence-dot"></span>
 
-                    {result.confidence.level || "Unknown"}
+                    {result.confidence.level}
+
                   </div>
+
                 )}
 
               </div>
 
 
               <div className="answer-content">
+
                 {result.answer}
+
               </div>
 
 
               {result.confidence && (
+
                 <div className="confidence-details">
 
                   <div className="confidence-item">
-                    <span>Confidence score</span>
+
+                    <span>
+                      Confidence score
+                    </span>
 
                     <strong>
-                      {typeof result.confidence.score ===
-                      "number"
-                        ? result.confidence.score.toFixed(4)
-                        : "N/A"}
+                      {formatScore(
+                        result.confidence.score
+                      )}
                     </strong>
+
                   </div>
 
                   <div className="confidence-item">
-                    <span>Decision</span>
+
+                    <span>
+                      Decision
+                    </span>
 
                     <strong>
                       {result.confidence.should_answer
-                        ? "Answer"
-                        : "Reject"}
+                        ? "ANSWER"
+                        : "REJECT"}
                     </strong>
+
                   </div>
 
                 </div>
+
               )}
 
             </div>
 
 
-            {/* SOURCES */}
+            {/* ================= METRICS ================= */}
 
-            {result.sources &&
-              result.sources.length > 0 && (
+            <div className="metrics-section">
 
-                <div className="sources-card">
+              <div className="section-heading">
 
-                  <div className="section-heading">
+                <div>
 
-                    <div>
-                      <span className="eyebrow">
-                        RETRIEVAL
-                      </span>
+                  <span className="eyebrow">
+                    PERFORMANCE
+                  </span>
 
-                      <h3>
-                        Sources
-                        <span className="source-count">
-                          {result.sources.length}
-                        </span>
-                      </h3>
-                    </div>
+                  <h3>
+                    Pipeline Metrics
+                  </h3>
+
+                </div>
+
+              </div>
+
+
+              <div className="metrics-grid">
+
+                <div className="metric-card">
+
+                  <span>
+                    Retrieval
+                  </span>
+
+                  <strong>
+                    {formatTime(
+                      metrics.retrieval_time
+                    )}
+                  </strong>
+
+                  <small>
+                    Dense + BM25 + reranking
+                  </small>
+
+                </div>
+
+
+                <div className="metric-card">
+
+                  <span>
+                    Context
+                  </span>
+
+                  <strong>
+                    {formatTime(
+                      metrics.context_time
+                    )}
+                  </strong>
+
+                  <small>
+                    Context construction
+                  </small>
+
+                </div>
+
+
+                <div className="metric-card">
+
+                  <span>
+                    Generation
+                  </span>
+
+                  <strong>
+                    {formatTime(
+                      metrics.generation_time
+                    )}
+                  </strong>
+
+                  <small>
+                    LLM response
+                  </small>
+
+                </div>
+
+
+                <div className="metric-card metric-total">
+
+                  <span>
+                    Total latency
+                  </span>
+
+                  <strong>
+                    {formatTime(
+                      metrics.total_time
+                    )}
+                  </strong>
+
+                  <small>
+                    End-to-end pipeline
+                  </small>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* ================= RETRIEVAL ================= */}
+
+            <div className="retrieval-card">
+
+              <div className="section-heading">
+
+                <div>
+
+                  <span className="eyebrow">
+                    RETRIEVAL ANALYSIS
+                  </span>
+
+                  <h3>
+                    Retrieval Pipeline
+                  </h3>
+
+                </div>
+
+              </div>
+
+
+              <div className="retrieval-stats">
+
+                <div>
+                  <span>
+                    Search queries
+                  </span>
+
+                  <strong>
+                    {retrieval.query_count ?? "—"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Candidates
+                  </span>
+
+                  <strong>
+                    {retrieval.candidate_count ?? "—"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Reranked
+                  </span>
+
+                  <strong>
+                    {retrieval.reranked_count ?? "—"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Sources used
+                  </span>
+
+                  <strong>
+                    {retrieval.sources_used ??
+                      result.sources?.length ??
+                      "—"}
+                  </strong>
+                </div>
+
+              </div>
+
+
+              {/* GENERATED QUERIES */}
+
+              {retrieval.queries &&
+                retrieval.queries.length > 0 && (
+
+                <div className="query-expansion">
+
+                  <div className="subheading">
+
+                    <span>
+                      QUERY EXPANSION
+                    </span>
+
+                    <small>
+                      {retrieval.queries.length}
+                      queries
+                    </small>
 
                   </div>
 
 
-                  <div className="sources-list">
+                  <div className="expanded-queries">
 
-                    {result.sources.map(
-                      (source, index) => {
+                    {retrieval.queries.map(
+                      (searchQuery, index) => (
 
-                        const metadata =
-                          source.metadata || {};
+                        <div
+                          className="expanded-query"
+                          key={index}
+                        >
 
-                        const filename =
-                          metadata.filename ||
-                          metadata.source ||
-                          "Unknown document";
+                          <span className="query-index">
+                            {String(
+                              index + 1
+                            ).padStart(2, "0")}
+                          </span>
 
-                        const page =
-                          metadata.page;
+                          <span>
+                            {searchQuery}
+                          </span>
 
-                        const rerankScore =
-                          source.rerank_score;
+                        </div>
 
-                        return (
-                          <div
-                            className="source-item"
-                            key={
-                              source.parent_id ||
-                              `${filename}-${page}-${index}`
-                            }
-                          >
+                      )
+                    )}
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </div>
+
+
+            {/* ================= SOURCES ================= */}
+
+            {result.sources &&
+              result.sources.length > 0 && (
+
+              <div className="sources-card">
+
+                <div className="section-heading">
+
+                  <div>
+
+                    <span className="eyebrow">
+                      DOCUMENT EVIDENCE
+                    </span>
+
+                    <h3>
+
+                      Retrieved Sources
+
+                      <span className="source-count">
+                        {result.sources.length}
+                      </span>
+
+                    </h3>
+
+                  </div>
+
+                </div>
+
+
+                <div className="sources-list">
+
+                  {result.sources.map(
+                    (source, index) => {
+
+                      const metadata =
+                        source.metadata || {};
+
+                      const filename =
+                        metadata.filename ||
+                        metadata.source ||
+                        "Unknown document";
+
+                      const page =
+                        metadata.page;
+
+                      return (
+
+                        <details
+                          className="source-item"
+                          key={
+                            source.parent_id ||
+                            `${filename}-${page}-${index}`
+                          }
+                        >
+
+                          <summary>
 
                             <div className="source-number">
-                              {String(index + 1).padStart(
-                                2,
-                                "0"
-                              )}
+                              {String(
+                                index + 1
+                              ).padStart(2, "0")}
                             </div>
 
 
@@ -347,15 +643,19 @@ function App() {
 
                                 {page !== undefined &&
                                   page !== null && (
-                                    <span>
-                                      Page {page}
-                                    </span>
-                                  )}
+
+                                  <span>
+                                    Page {page}
+                                  </span>
+
+                                )}
 
                                 {metadata.file_type && (
+
                                   <span>
                                     {metadata.file_type.toUpperCase()}
                                   </span>
+
                                 )}
 
                               </div>
@@ -363,53 +663,142 @@ function App() {
                             </div>
 
 
-                            {typeof rerankScore ===
-                              "number" && (
-                              <div className="source-score">
+                            <div className="source-score-group">
+
+                              {typeof source.rerank_score ===
+                                "number" && (
+
+                                <div className="source-score">
+
+                                  <span>
+                                    RERANK
+                                  </span>
+
+                                  <strong>
+                                    {formatScore(
+                                      source.rerank_score
+                                    )}
+                                  </strong>
+
+                                </div>
+
+                              )}
+
+                              {typeof source.rrf_score ===
+                                "number" && (
+
+                                <div className="source-score">
+
+                                  <span>
+                                    RRF
+                                  </span>
+
+                                  <strong>
+                                    {formatScore(
+                                      source.rrf_score
+                                    )}
+                                  </strong>
+
+                                </div>
+
+                              )}
+
+                            </div>
+
+                            <span className="expand-icon">
+                              +
+                            </span>
+
+                          </summary>
+
+
+                          <div className="source-details">
+
+                            {source.query_match_count && (
+
+                              <div className="source-detail-row">
 
                                 <span>
-                                  Rerank
+                                  Query matches
                                 </span>
 
                                 <strong>
-                                  {rerankScore.toFixed(
-                                    4
+                                  {source.query_match_count}
+                                </strong>
+
+                              </div>
+
+                            )}
+
+
+                            {source.multi_query_score && (
+
+                              <div className="source-detail-row">
+
+                                <span>
+                                  Multi-query score
+                                </span>
+
+                                <strong>
+                                  {formatScore(
+                                    source.multi_query_score
                                   )}
                                 </strong>
 
                               </div>
+
                             )}
 
-                          </div>
-                        );
-                      }
-                    )}
 
-                  </div>
+                            <div className="source-text">
+
+                              <span>
+                                RETRIEVED CONTENT
+                              </span>
+
+                              <p>
+                                {source.text ||
+                                  "No source text available."}
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                        </details>
+
+                      );
+
+                    }
+                  )}
 
                 </div>
-              )}
+
+              </div>
+
+            )}
 
           </section>
+
         )}
 
 
-        {/* ================================================= */}
-        {/* ARCHITECTURE */}
-        {/* ================================================= */}
+        {/* ================= ARCHITECTURE ================= */}
 
         <section className="architecture">
 
           <div className="architecture-header">
 
             <div>
+
               <span className="eyebrow">
-                PIPELINE
+                SYSTEM ARCHITECTURE
               </span>
 
               <h3>
-                How the system works
+                How Advanced RAG works
               </h3>
+
             </div>
 
           </div>
@@ -418,47 +807,97 @@ function App() {
           <div className="pipeline">
 
             <div className="pipeline-step">
+
               <span>01</span>
-              <strong>Query Expansion</strong>
+
+              <strong>
+                Query Expansion
+              </strong>
+
               <small>
-                Multiple search queries
+                Multiple semantic queries
               </small>
+
             </div>
+
 
             <div className="pipeline-arrow">
               →
             </div>
 
+
             <div className="pipeline-step">
+
               <span>02</span>
-              <strong>Hybrid Retrieval</strong>
+
+              <strong>
+                Hybrid Retrieval
+              </strong>
+
               <small>
-                Dense + BM25
+                Dense + BM25 + RRF
               </small>
+
             </div>
+
 
             <div className="pipeline-arrow">
               →
             </div>
 
+
             <div className="pipeline-step">
+
               <span>03</span>
-              <strong>Reranking</strong>
+
+              <strong>
+                Cross Encoder
+              </strong>
+
               <small>
-                Cross-encoder scoring
+                Relevance reranking
               </small>
+
             </div>
+
 
             <div className="pipeline-arrow">
               →
             </div>
 
+
             <div className="pipeline-step">
+
               <span>04</span>
-              <strong>Generation</strong>
+
+              <strong>
+                Confidence
+              </strong>
+
               <small>
-                Grounded LLM answer
+                Answer / reject decision
               </small>
+
+            </div>
+
+
+            <div className="pipeline-arrow">
+              →
+            </div>
+
+
+            <div className="pipeline-step">
+
+              <span>05</span>
+
+              <strong>
+                LLM Generation
+              </strong>
+
+              <small>
+                Grounded response
+              </small>
+
             </div>
 
           </div>
@@ -468,9 +907,7 @@ function App() {
       </main>
 
 
-      {/* ================================================= */}
-      {/* FOOTER */}
-      {/* ================================================= */}
+      {/* ================= FOOTER ================= */}
 
       <footer className="footer">
 
@@ -479,7 +916,8 @@ function App() {
         </span>
 
         <span>
-          Hybrid Retrieval · Reranking · Confidence
+          Multi-Query · Hybrid Retrieval · Reranking ·
+          Confidence · Grounded Generation
         </span>
 
       </footer>

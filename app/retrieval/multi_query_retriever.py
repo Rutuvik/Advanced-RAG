@@ -1,4 +1,4 @@
-from app.api.server import query
+
 from app.retrieval.query_expander import QueryExpander
 from app.retrieval.hybrid_retriever import HybridRetriever
 
@@ -22,64 +22,68 @@ class MultiQueryRetriever:
             bm25_top_k=bm25_top_k,
             rerank_top_k=rerank_top_k,
         )
-
+        self.last_trace = {}
     def retrieve(
-        self,
-        query: str,
-        top_k: int = 5,
+    self,
+    query: str,
+    top_k: int = 5,
     ):
+
         print("\n[MQR] Starting multi-query retrieval")
         print(f"[MQR] Original query: {query}")
 
+        # ==================================================
+        # 1. Query Expansion
+        # ==================================================
+
         print("[MQR] Expanding query...")
-        # ==================================================
-        # 1. Generate multiple search queries
-        # ==================================================
 
-        queries = self.query_expander.expand(
-            query
+        queries = self.query_expander.expand(query)
+
+        print(
+            f"[MQR] Query expansion completed: "
+            f"{len(queries)} queries"
         )
-
-        print(f"[MQR] Query expansion completed: {len(queries)} queries")
 
         for index, search_query in enumerate(
             queries,
             start=1,
         ):
-            print(
-                f"{index}. {search_query}"
-            )
+            print(f"{index}. {search_query}")
 
         # ==================================================
-        # 2. Retrieve candidates for every query
+        # 2. Hybrid Retrieval
         # ==================================================
 
         all_candidates = {}
 
+        retrieval_stats = []
+
         for search_query in queries:
+
             print(
-        f"\n[MQR] Retrieving candidates for: {search_query}"
-    )
+                f"\n[MQR] Retrieving candidates for: "
+                f"{search_query}"
+            )
 
             candidates = (
                 self.hybrid_retriever
-                .retrieve_candidates(
-                    search_query
-                )
+                .retrieve_candidates(search_query)
             )
+
             print(
-        f"[MQR] Candidates returned: {len(candidates)}"
-    )
+                f"[MQR] Candidates returned: "
+                f"{len(candidates)}"
+            )
+
+            retrieval_stats.append({
+                "query": search_query,
+                "candidates": len(candidates),
+            })
 
             for candidate in candidates:
 
-                parent_id = candidate[
-                    "parent_id"
-                ]
-
-                # ------------------------------------------
-                # First time seeing this parent
-                # ------------------------------------------
+                parent_id = candidate["parent_id"]
 
                 if parent_id not in all_candidates:
 
@@ -88,23 +92,15 @@ class MultiQueryRetriever:
                         "query_matches": [],
                     }
 
-                # ------------------------------------------
-                # Store how this parent matched
-                # ------------------------------------------
-
-                all_candidates[
-                    parent_id
-                ]["query_matches"].append(
-                    {
-                        "query": search_query,
-                        "rrf_score": candidate[
-                            "rrf_score"
-                        ],
-                    }
-                )
+                all_candidates[parent_id][
+                    "query_matches"
+                ].append({
+                    "query": search_query,
+                    "rrf_score": candidate["rrf_score"],
+                })
 
         # ==================================================
-        # 3. Calculate multi-query score
+        # 3. Multi-query scoring
         # ==================================================
 
         candidates = list(
@@ -122,57 +118,39 @@ class MultiQueryRetriever:
                 for match in query_matches
             ]
 
-            # Highest score means the document
-            # strongly matched at least one query.
             max_score = max(scores)
 
-            # Number of different generated queries
-            # that retrieved this document.
             query_match_count = len(
                 query_matches
             )
 
-            # ------------------------------------------------
-            # Multi-query score
-            #
-            # max_score:
-            #   rewards strong relevance
-            #
-            # match_count:
-            #   rewards consistency across queries
-            # ------------------------------------------------
-
-            candidate[
-                "multi_query_score"
-            ] = (
-                max_score
-                + (
-                    0.01
-                    * query_match_count
-                )
+            candidate["multi_query_score"] = (
+                max_score +
+                (0.01 * query_match_count)
             )
 
-            candidate[
-                "query_match_count"
-            ] = query_match_count
+            candidate["query_match_count"] = (
+                query_match_count
+            )
 
         # ==================================================
-        # 4. Sort candidates before reranking
+        # 4. Sort before reranking
         # ==================================================
 
         candidates.sort(
-            key=lambda x: x[
-                "multi_query_score"
-            ],
+            key=lambda x: x["multi_query_score"],
             reverse=True,
         )
 
         # ==================================================
-        # 5. Rerank using original query
+        # 5. Reranking
         # ==================================================
+
         print(
-    f"\n[MQR] Starting reranking for {len(candidates)} candidates..."
-)
+            f"\n[MQR] Starting reranking for "
+            f"{len(candidates)} candidates..."
+        )
+
         reranked = (
             self.hybrid_retriever
             .reranker
@@ -182,11 +160,49 @@ class MultiQueryRetriever:
                 top_k=top_k,
             )
         )
+
         print(
-    f"[MQR] Reranking completed. Results: {len(reranked)}"
-)
+            f"[MQR] Reranking completed. "
+            f"Results: {len(reranked)}"
+        )
+
         # ==================================================
-        # 6. Return final results
+        # 6. Store trace for frontend/API
         # ==================================================
 
-        return reranked
+        self.last_trace = {
+            "original_query": query,
+            "expanded_queries": queries,
+            "query_count": len(queries),
+            "total_candidates": len(candidates),
+            "retrieval_stats": retrieval_stats,
+            "reranked_results": len(reranked),
+            "results": [
+                {
+                    "parent_id": result["parent_id"],
+                    "rerank_score": result.get(
+                        "rerank_score",
+                        0,
+                    ),
+                    "rrf_score": result.get(
+                        "rrf_score",
+                        0,
+                    ),
+                    "multi_query_score": result.get(
+                        "multi_query_score",
+                        0,
+                    ),
+                    "query_match_count": result.get(
+                        "query_match_count",
+                        0,
+                    ),
+                }
+                for result in reranked
+            ],
+        }
+
+        return {
+    "results": reranked,
+    "queries": queries,
+    "candidate_count": len(candidates),
+}
